@@ -28,6 +28,7 @@ jobs:
         run: npm install
 
       - name: Create dummy Firebase key for build
+        working-directory: ./backend
         run: echo "{}" > moodflow-key.json
 
       - name: Build backend
