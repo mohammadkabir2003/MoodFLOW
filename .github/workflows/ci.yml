@@ -47,6 +47,13 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
+      - name: Create dummy Firebase env for frontend
+        working-directory: ./frontend
+        run: |
+          echo "NEXT_PUBLIC_FIREBASE_API_KEY=dummyApiKey" > .env.local
+          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=dummyAuthDomain" >> .env.local
+          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=dummyProjectId" >> .env.local
+
       - name: Build frontend
         working-directory: ./frontend
         run: npm run build
