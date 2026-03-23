@@ -6,7 +6,11 @@ import DashboardHeader from "@/components/DashboardHeader";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null); // use this to define the current user
-
+  const [selectedMood, setSelectedMood] = useState<any>(null);
+  const [notes, setNotes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -15,6 +19,34 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, []);
 
+  const handleSave = async () => {
+    if (!selectedMood && !notes) return;
+    setIsSaving(true);
+    setApiMessage(null);
+    setApiError(null);
+    try {
+      const emojiMap: Record<string, number> = {
+        "Very Bad": 1, "Bad": 2, "Neutral": 3, "Good": 4, "Excellent": 5
+      };
+      const res = await fetch("http://localhost:3001/analyzeMood", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          text: notes, 
+          emojiScore: selectedMood ? emojiMap[selectedMood.label] : 3 
+        })
+      });
+      if (!res.ok) throw new Error("Server Error");
+      const data = await res.json();
+      setApiMessage(`Successfully analyzed! Mood score: ${data.moodScore}`);
+      setSelectedMood(null);
+      setNotes("");
+    } catch (err: any) {
+      setApiError("Failed to save entry");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const moods = [
     { label: "Very Bad", symbol: "😞", color: "border-amber-300" },
@@ -100,7 +132,8 @@ export default function DashboardPage() {
                         <button
                           key={mood.label}
                           type="button"
-                          className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 ${mood.color} bg-slate-50/80 dark:bg-slate-950/60 py-4 text-sm font-medium hover:-translate-y-1 hover:shadow-lg transition-all`}
+                          onClick={() => setSelectedMood(mood)}
+                          className={`relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 ${mood.color} bg-slate-50/80 dark:bg-slate-950/60 py-4 text-sm font-medium hover:-translate-y-1 hover:shadow-lg transition-all ${selectedMood?.label === mood.label ? 'ring-2 ring-brand-500 scale-105' : ''}`}
                         >
                           <span className="text-xl">{mood.symbol}</span>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -119,6 +152,8 @@ export default function DashboardPage() {
                     <textarea
                       id="notes"
                       rows={4}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
                       placeholder="Write your notes here..."
                       className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 px-4 py-3 text-sm resize-none placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/60 focus:border-brand-500/60"
                     />
@@ -134,9 +169,17 @@ export default function DashboardPage() {
                         <p className="text-sm font-medium">Today · March 2, 2026</p>
                       </div>
                     </div>
-                    <button className="inline-flex items-center justify-center px-6 md:px-8 py-3 rounded-2xl text-sm md:text-base font-semibold text-white bg-gradient-brand shadow-lg shadow-brand-600/30 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                      Save Entry
-                    </button>
+                    <div className="flex flex-col items-end gap-2">
+                      <button 
+                        onClick={handleSave} 
+                        disabled={isSaving}
+                        className="inline-flex items-center justify-center px-6 md:px-8 py-3 rounded-2xl text-sm md:text-base font-semibold text-white bg-gradient-brand shadow-lg shadow-brand-600/30 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSaving ? "Saving..." : "Save Entry"}
+                      </button>
+                      {apiMessage && <p className="text-sm text-emerald-600 font-medium">{apiMessage}</p>}
+                      {apiError && <p className="text-sm text-red-500 font-medium">{apiError}</p>}
+                    </div>
                   </div>
                 </div>
               </section>
