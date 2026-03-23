@@ -27,6 +27,14 @@ jobs:
         working-directory: ./backend
         run: npm install
 
+      - name: Create dummy Firebase key for build
+        working-directory: ./backend
+        run: echo "{}" > moodflow-key.json
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build
+
       - name: Run backend tests
         working-directory: ./backend
         run: npm test
@@ -39,6 +47,17 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
+      - name: Create dummy Firebase env for frontend
+        working-directory: ./frontend
+        run: |
+          echo "NEXT_PUBLIC_FIREBASE_API_KEY=dummyApiKey" > .env.local
+          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=dummyAuthDomain" >> .env.local
+          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=dummyProjectId" >> .env.local
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
       - name: Run frontend tests
         working-directory: ./frontend
         run: npm test -- --watchAll=false
@@ -46,3 +65,11 @@ jobs:
       - name: Generate frontend coverage
         working-directory: ./frontend
         run: npm run test:coverage -- --watchAll=false
+
+      - name: Install Playwright Browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        working-directory: ./frontend
+        run: npx playwright test
