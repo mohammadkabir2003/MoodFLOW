@@ -25,7 +25,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm install
+        run: npm ci
 
       - name: Run backend tests
         working-directory: ./backend
@@ -37,7 +37,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm install
+        run: npm ci
 
       - name: Run frontend tests
         working-directory: ./frontend
@@ -46,3 +46,24 @@ jobs:
       - name: Generate frontend coverage
         working-directory: ./frontend
         run: npm run test:coverage -- --watchAll=false
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Install Playwright
+        working-directory: ./frontend
+        run: |
+          npm install -D @playwright/test
+          npx playwright install --with-deps
+
+      - name: Run E2E tests
+        working-directory: ./frontend
+        run: npx playwright test
+
+      - name: Create dummy Firebase key
+        run: echo '{}' > backend/moodflow-key.json
