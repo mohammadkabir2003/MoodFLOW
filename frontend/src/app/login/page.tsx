@@ -50,7 +50,7 @@ export default function SignInPage() {
         { merge: true }
       );
 
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: any) {
       if (err.code === "auth/invalid-credential") {
         setError("Invalid email or password.");
@@ -81,7 +81,7 @@ export default function SignInPage() {
         { merge: true }
       );
 
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: any) {
       setError("Google sign-in failed.");
     } finally {

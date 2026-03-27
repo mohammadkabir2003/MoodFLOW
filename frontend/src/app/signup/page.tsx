@@ -86,7 +86,7 @@ export default function SignUpPage() {
         { merge: true }
       );
 
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: any) {
       setError(err.message || "Google sign-up failed.");
     } finally {
