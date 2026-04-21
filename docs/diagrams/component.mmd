@@ -1,0 +1,8 @@
+graph TD
+    User([User]) -->|Interacts with| UI["Frontend Application (Next.js)"]
+    
+    UI -->|Authenticates| Auth["Firebase Authentication"]
+    UI -->|Sends API Requests| API["Backend API (Express.js)"]
+    
+    API -->|Reads/Writes Data| DB[("Firebase Firestore")]
+    API -->|Analyzes Text| ML["Mood Analyzer (NLP Transformers)"]
