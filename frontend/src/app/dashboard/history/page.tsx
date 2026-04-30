@@ -22,6 +22,7 @@ type MoodEntry = {
   emojiScore: number;
   moodScore?: number;
   note: string;
+  tags?: string[];
   date: any;
 };
 
@@ -89,6 +90,7 @@ export default function MoodHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [moodFilter, setMoodFilter] = useState(0);
+  const [tagFilter, setTagFilter] = useState("All");
   const [range, setRange] = useState("30 Days");
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
@@ -131,8 +133,16 @@ export default function MoodHistoryPage() {
 
   const now = new Date();
 
+  const allTags = Array.from(
+    new Set(entries.flatMap((entry) => entry.tags || []))
+  );
+
   const filtered = entries.filter((entry) => {
     if (moodFilter !== 0 && entry.emojiScore !== moodFilter) return false;
+
+    if (tagFilter !== "All" && !entry.tags?.includes(tagFilter)) {
+      return false;
+    }
 
     if (range !== "All Time") {
       const days = range === "7 Days" ? 7 : range === "30 Days" ? 30 : 90;
@@ -150,7 +160,8 @@ export default function MoodHistoryPage() {
 
       if (
         !entry.note?.toLowerCase().includes(q) &&
-        !dateStr.includes(q)
+        !dateStr.includes(q) &&
+        !(entry.tags || []).some((tag) => tag.toLowerCase().includes(q))
       ) {
         return false;
       }
@@ -167,15 +178,15 @@ export default function MoodHistoryPage() {
   );
 
   const scoredEntries = entries.filter(
-  (e) => typeof e.moodScore === "number"
+    (e) => typeof e.moodScore === "number"
   );
 
   const avgMood = scoredEntries.length
-  ? (
-      scoredEntries.reduce((sum, e) => sum + (e.moodScore || 0), 0) /
-      scoredEntries.length
-    ).toFixed(1)
-  : "—";
+    ? (
+        scoredEntries.reduce((sum, e) => sum + (e.moodScore || 0), 0) /
+        scoredEntries.length
+      ).toFixed(1)
+    : "—";
 
   const thisMonth = entries.filter((e) => {
     const d = toDate(e.date);
@@ -293,7 +304,7 @@ export default function MoodHistoryPage() {
 
                 <input
                   type="text"
-                  placeholder="Search entries by note or date..."
+                  placeholder="Search entries by note, date, or tag..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -318,6 +329,39 @@ export default function MoodHistoryPage() {
                     }`}
                   >
                     {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setTagFilter("All");
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    tagFilter === "All"
+                      ? "bg-brand-600 text-white border-brand-600 shadow-sm shadow-brand-600/30"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/50 hover:border-slate-300"
+                  }`}
+                >
+                  All Tags
+                </button>
+
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      setTagFilter(tag);
+                      setPage(1);
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      tagFilter === tag
+                        ? "bg-brand-600 text-white border-brand-600 shadow-sm shadow-brand-600/30"
+                        : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/50 hover:border-slate-300"
+                    }`}
+                  >
+                    #{tag}
                   </button>
                 ))}
               </div>
@@ -404,7 +448,7 @@ export default function MoodHistoryPage() {
                               </span>
                             )}
 
-                          <button
+                            <button
                               onClick={(e) =>
                                 { e.stopPropagation();
                                   setOpenMenuId(openMenuId === entry.id ? null : entry.id);
@@ -434,6 +478,19 @@ export default function MoodHistoryPage() {
                           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {entry.note}
                           </p>
+
+                          {entry.tags && entry.tags.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-2.5 py-1 rounded-full text-xs bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </article>
