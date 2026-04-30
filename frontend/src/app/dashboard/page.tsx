@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import MoodChart from "@/components/MoodChart";
 import {
   collection,
@@ -26,6 +25,7 @@ type RecentEntry = {
   id: string;
   emojiScore: number;
   note: string;
+  tags?: string[];
   date: any;
 };
 
@@ -52,10 +52,11 @@ function formatEntryDate(date: any) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null); // use this to define the current user
+  const [user, setUser] = useState<any>(null);
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const [emojiScore, setEmojiScore] = useState<number | null>(null);
   const [userInput, setUserInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -81,30 +82,30 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-  if (!user) {
-    setRecentEntries([]);
-    return;
-  }
-
-  const fetchRecentEntries = async () => {
-    try {
-      const ref = collection(db, "users", user.uid, "moodEntries");
-      const q = query(ref, orderBy("date", "desc"), limit(3));
-      const snap = await getDocs(q);
-
-      const data = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<RecentEntry, "id">),
-      }));
-
-      setRecentEntries(data);
-    } catch (err) {
-      console.error("Failed to fetch recent entries:", err);
+    if (!user) {
+      setRecentEntries([]);
+      return;
     }
-  };
 
-  fetchRecentEntries();
-}, [user, saved, deleted]);
+    const fetchRecentEntries = async () => {
+      try {
+        const ref = collection(db, "users", user.uid, "moodEntries");
+        const q = query(ref, orderBy("date", "desc"), limit(3));
+        const snap = await getDocs(q);
+
+        const data = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<RecentEntry, "id">),
+        }));
+
+        setRecentEntries(data);
+      } catch (err) {
+        console.error("Failed to fetch recent entries:", err);
+      }
+    };
+
+    fetchRecentEntries();
+  }, [user, saved, deleted]);
 
   useEffect(() => {
     if (!user) {
@@ -144,7 +145,6 @@ export default function DashboardPage() {
   });
 
   const handleSave = async () => {
-    
     setError("");
     setSaved(false);
     setSaving(true);
@@ -194,17 +194,25 @@ export default function DashboardPage() {
 
       const moodScore = data.moodScore;
 
+      const tags = tagInput
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean);
+
       const moodRef = collection(db, "users", user.uid, "moodEntries");
+
       await addDoc(moodRef, {
         emojiScore: emojiScore,
         moodScore: moodScore,
         note: userInput,
+        tags: tags,
         date: serverTimestamp(),
       });
 
       setSaved(true);
       setEmojiScore(null);
       setUserInput("");
+      setTagInput("");
 
     } catch (err) {
       if (err instanceof Error) {
@@ -293,7 +301,6 @@ export default function DashboardPage() {
 
       <div className="pt-20 pb-16 px-6">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
@@ -311,11 +318,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Main content */}
           <div className="grid lg:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)] gap-8 xl:gap-12">
-            {/* Left column: log + recent */}
             <div className="space-y-8">
-              {/* Log your mood */}
               <section className="glass rounded-3xl bg-white/80 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 shadow-lg shadow-slate-900/5">
                 <div className="px-6 pt-6 pb-5 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
                   <div>
@@ -330,7 +334,6 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="px-6 pt-6 pb-6 space-y-6">
-                  {/* Mood scale */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-sm font-medium">How are you feeling today?</p>
@@ -359,7 +362,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Notes */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium" htmlFor="notes">
                       What did you work on today?
@@ -372,6 +374,15 @@ export default function DashboardPage() {
                       value={userInput} 
                       onChange={(e) => setUserInput(e.target.value)}
                     />
+
+                    <input
+                      type="text"
+                      placeholder="Add tags: school, work, gym..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 px-4 py-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/60"
+                    />
+
                     { error &&
                     <p className="mt-1 ml-2 text-sm text-red-500 font-medium">
                       {error}
@@ -384,7 +395,6 @@ export default function DashboardPage() {
                     }
                   </div>
 
-                  {/* Date + action */}
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center gap-3 text-sm">
                       <div className="px-3 py-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60">
@@ -405,7 +415,6 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              {/* Recent entries */}
               <section className="glass rounded-3xl bg-white/80 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 shadow-lg shadow-slate-900/5">
                 <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
                   <h2 className="text-lg font-display font-semibold flex items-center gap-2">
@@ -430,7 +439,7 @@ export default function DashboardPage() {
                   {recentEntries.length === 0 ? (
                     <div className="rounded-2xl border border-slate-100 dark:border-slate-900 bg-slate-50/80 dark:bg-slate-950/60 px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
                       No mood entries yet. Save your first entry above.
-                      </div>
+                    </div>
                   ) : (
                     recentEntries.map((entry) => (
                       <article
@@ -460,7 +469,6 @@ export default function DashboardPage() {
 
                             {openMenuId === entry.id && (
                               <div className="absolute top-10 -right-7 z-11 w-32 rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800 p-2">
-                                
                                 <button
                                   onClick={() => handleDelete(entry.id)}
                                   className="flex w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 justify-around items-center"
@@ -468,7 +476,6 @@ export default function DashboardPage() {
                                   <Trash2 className="w-4 h-4 text-red-500" />
                                   Delete
                                 </button>
-
                               </div>
                             )}
 
@@ -477,6 +484,19 @@ export default function DashboardPage() {
                           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {entry.note}
                           </p>
+
+                          {entry.tags && entry.tags.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-2.5 py-1 rounded-full text-xs bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </article>
                     ))
@@ -485,7 +505,6 @@ export default function DashboardPage() {
               </section>
             </div>
 
-            {/* Right column: trends */}
             <section className="glass rounded-3xl bg-white/80 dark:bg-slate-950/80 border border-dashed border-slate-200 dark:border-slate-800 shadow-lg shadow-slate-900/5 flex flex-col">
               <div className="px-6 pt-6 pb-3 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
                 <div>
@@ -540,4 +559,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-
