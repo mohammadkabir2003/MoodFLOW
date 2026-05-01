@@ -52,9 +52,7 @@ jobs:
 
     steps:
       - name: Trigger backend deploy on Render
-        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL != '' }}
         run: curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"
 
       - name: Trigger frontend deploy on Render
-        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
         run: curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
