@@ -60,7 +60,17 @@ jobs:
 
     steps:
       - name: Trigger backend deploy on Render
-        run: curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"
+        run: |
+          if [ -n "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"
+          else
+            echo "No backend deploy hook provided, skipping."
+          fi
 
       - name: Trigger frontend deploy on Render
-        run: curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
+        run: |
+          if [ -n "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
+          else
+            echo "No frontend deploy hook provided, skipping."
+          fi
