@@ -1,0 +1,60 @@
+name: Build and Deploy to Render
+
+on:
+  push:
+    branches:
+      - mk_public_cloud
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "render.yaml"
+      - ".github/workflows/render-deploy.yml"
+      - "package.json"
+      - "package-lock.json"
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/mk_public_cloud' && github.event_name == 'push'
+
+    steps:
+      - name: Trigger backend deploy on Render
+        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL != '' }}
+        run: curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"
+
+      - name: Trigger frontend deploy on Render
+        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
+        run: curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
