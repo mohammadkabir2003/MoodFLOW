@@ -55,7 +55,10 @@ describe("DashboardPage", () => {
 
     getDocs.mockResolvedValue({ docs: [] });
 
-    (global as any).fetch = jest.fn();
+    (global as any).fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ chartData: [] }),
+    });
   });
 
   it("renders the main dashboard sections", () => {

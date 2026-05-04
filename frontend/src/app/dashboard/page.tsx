@@ -1,11 +1,10 @@
 "use client"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import AvatarDropdown from "@/components/AvatarDropdown";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import MoodChart from "@/components/MoodChart";
 import {
   collection,
@@ -26,6 +25,7 @@ type RecentEntry = {
   emojiScore: number;
   note: string;
   date: any;
+  tags?: string[];
 };
 
 const emojiMap: Record<number, string> = {
@@ -77,6 +77,8 @@ export default function DashboardPage() {
   const [recentEntries, setRecentEntries] = useState<RecentEntry[]>([]);
   const [emojiScore, setEmojiScore] = useState<number | null>(null);
   const [userInput, setUserInput] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -95,6 +97,42 @@ export default function DashboardPage() {
   
     return () => unsubscribe();
   }, []);
+
+  const normalizeTag = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+
+  const addTag = (value?: string) => {
+    const rawValue = value ?? tagInput;
+    const newTags = rawValue
+      .split(",")
+      .map(normalizeTag)
+      .filter(Boolean)
+      .filter((tag) => !tags.includes(tag));
+
+    if (newTags.length === 0) {
+      return;
+    }
+
+    setTags((current) => [...current, ...newTags]);
+    setTagInput("");
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags((current) => current.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addTag();
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -221,11 +259,14 @@ export default function DashboardPage() {
         moodScore: moodScore,
         note: userInput,
         date: serverTimestamp(),
+        tags,
       });
 
       setSaved(true);
       setEmojiScore(null);
       setUserInput("");
+      setTags([]);
+      setTagInput("");
 
     } catch (err) {
       if (err instanceof Error) {
@@ -393,6 +434,46 @@ export default function DashboardPage() {
                       value={userInput} 
                       onChange={(e) => setUserInput(e.target.value)}
                     />
+
+                    <div className="mt-4">
+                      <label className="text-sm font-medium" htmlFor="tags">
+                        Add tags for this entry
+                      </label>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          id="tags"
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleTagKeyDown}
+                          placeholder="Type a tag and press Enter or comma"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 px-4 py-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/60 focus:border-brand-500/60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => addTag()}
+                          className="shrink-0 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition"
+                        >
+                          Add Tag
+                        </button>
+                      </div>
+
+                      {tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {tags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => removeTag(tag)}
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/70 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                            >
+                              {tag}
+                              <span className="text-slate-400">×</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     { error &&
                     <p className="mt-1 ml-2 text-sm text-red-500 font-medium">
                       {error}
@@ -498,6 +579,18 @@ export default function DashboardPage() {
                           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {entry.note}
                           </p>
+                          {entry.tags?.length ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.tags.map((tag) => (
+                                <span
+                                  key={`${entry.id}-${tag}`}
+                                  className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </article>
                     ))

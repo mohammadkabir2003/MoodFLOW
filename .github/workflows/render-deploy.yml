@@ -1,0 +1,76 @@
+name: Build and Deploy to Render
+
+on:
+  push:
+    branches:
+      - mk_public_cloud
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "render.yaml"
+      - ".github/workflows/render-deploy.yml"
+      - "package.json"
+      - "package-lock.json"
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: dummy-api-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: dummy-auth-domain
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: dummy-project-id
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: dummy-storage-bucket
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: dummy-sender-id
+          NEXT_PUBLIC_FIREBASE_APP_ID: dummy-app-id
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: dummy-measurement-id
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/mk_public_cloud' && github.event_name == 'push'
+
+    steps:
+      - name: Trigger backend deploy on Render
+        run: |
+          if [ -n "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}"
+          else
+            echo "No backend deploy hook provided, skipping."
+          fi
+
+      - name: Trigger frontend deploy on Render
+        run: |
+          if [ -n "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}"
+          else
+            echo "No frontend deploy hook provided, skipping."
+          fi

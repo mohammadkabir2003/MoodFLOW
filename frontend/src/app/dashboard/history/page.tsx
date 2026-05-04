@@ -23,6 +23,7 @@ type MoodEntry = {
   moodScore?: number;
   note: string;
   date: any;
+  tags?: string[];
 };
 
 const PAGE_SIZE = 8;
@@ -89,6 +90,7 @@ export default function MoodHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [moodFilter, setMoodFilter] = useState(0);
+  const [tagFilter, setTagFilter] = useState("");
   const [range, setRange] = useState("30 Days");
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
@@ -134,6 +136,8 @@ export default function MoodHistoryPage() {
   const filtered = entries.filter((entry) => {
     if (moodFilter !== 0 && entry.emojiScore !== moodFilter) return false;
 
+    if (tagFilter && !entry.tags?.includes(tagFilter)) return false;
+
     if (range !== "All Time") {
       const days = range === "7 Days" ? 7 : range === "30 Days" ? 30 : 90;
       const cutoff = new Date(now.getTime() - days * 86400000);
@@ -150,7 +154,8 @@ export default function MoodHistoryPage() {
 
       if (
         !entry.note?.toLowerCase().includes(q) &&
-        !dateStr.includes(q)
+        !dateStr.includes(q) &&
+        !entry.tags?.some((tag) => tag.toLowerCase().includes(q))
       ) {
         return false;
       }
@@ -158,6 +163,10 @@ export default function MoodHistoryPage() {
 
     return true;
   });
+
+  const availableTags = Array.from(
+    new Set(entries.flatMap((entry) => entry.tags ?? []))
+  ).sort();
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -293,7 +302,7 @@ export default function MoodHistoryPage() {
 
                 <input
                   type="text"
-                  placeholder="Search entries by note or date..."
+                  placeholder="Search entries by note, date, or tag..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -318,6 +327,40 @@ export default function MoodHistoryPage() {
                     }`}
                   >
                     {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTagFilter("");
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    tagFilter === ""
+                      ? "bg-brand-600 text-white border-brand-600 shadow-sm shadow-brand-600/30"
+                      : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/50 hover:border-slate-300"
+                  }`}
+                >
+                  All Tags
+                </button>
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      setTagFilter(tag);
+                      setPage(1);
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      tagFilter === tag
+                        ? "bg-brand-600 text-white border-brand-600 shadow-sm shadow-brand-600/30"
+                        : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50/50 dark:bg-slate-950/50 hover:border-slate-300"
+                    }`}
+                  >
+                    {tag}
                   </button>
                 ))}
               </div>
@@ -434,6 +477,18 @@ export default function MoodHistoryPage() {
                           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {entry.note}
                           </p>
+                          {entry.tags?.length ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {entry.tags.map((tag) => (
+                                <span
+                                  key={`${entry.id}-${tag}`}
+                                  className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </article>

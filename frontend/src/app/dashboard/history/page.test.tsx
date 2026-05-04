@@ -49,7 +49,7 @@ describe("MoodHistoryPage", () => {
 
     expect(screen.getByText(/mood history/i)).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText(/search entries by note or date/i)
+      screen.getByPlaceholderText(/search entries by note, date, or tag/i)
     ).toBeInTheDocument();
 
     expect(await screen.findByText(/total entries/i)).toBeInTheDocument();
