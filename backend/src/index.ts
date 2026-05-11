@@ -5,7 +5,7 @@ import { createApp } from "./app";
 
 dotenv.config();
 
-const port = parseInt(process.env.PORT as string, 10) || 8080;
+const port = parseInt(process.env.PORT as string, 10) || 3001;
 
 const analyzer = new MoodAnalyzer();
 const app = createApp(analyzer);
