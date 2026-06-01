@@ -1,0 +1,40 @@
+erDiagram
+    USER ||--o{ MOOD_ENTRY : creates
+    USER ||--o{ REVIEW : receives
+    MOOD_ENTRY ||--o| MOOD_ANALYSIS : generates
+    
+    USER {
+        string id PK
+        string email
+        string username
+        string firstName
+        string lastName
+        string bio
+        timestamp createdAt
+    }
+    
+    MOOD_ENTRY {
+        string id PK
+        string userId FK
+        int emojiScore
+        float moodScore
+        string note
+        timestamp date
+    }
+    
+    REVIEW {
+        string id PK
+        string targetUserId FK
+        string reviewerId FK
+        int rating
+        string content
+        timestamp createdAt
+    }
+    
+    MOOD_ANALYSIS {
+        string id PK
+        string entryId FK
+        float confidenceScore
+        float polarity
+        timestamp generatedAt
+    }

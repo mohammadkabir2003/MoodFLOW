@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor User as User
+    participant Front as Frontend (Next.js)
+    participant Back as Backend (Express API)
+    participant ML as ML Model (Transformers)
+    participant DB as Database (Firestore)
+
+    User->>Front: Submits structured journal text and emoji
+    activate Front
+    Front->>Back: POST /analyzeMood { text, emojiScore }
+    activate Back
+    Back->>ML: getAugmentedMoodScore()
+    activate ML
+    ML-->>Back: Returns NLP-computed moodScore
+    deactivate ML
+    Back-->>Front: 200 OK { moodScore }
+    deactivate Back
+    
+    Front->>DB: Save MoodEntry (text, emojiScore, moodScore, info)
+    activate DB
+    DB-->>Front: Acknowledge document creation
+    deactivate DB
+    
+    Front-->>User: Update user interface / Redirect view
+    deactivate Front
