@@ -1,0 +1,32 @@
+# Verifies infrastructure changes for MoodFLOW.
+#
+# Runs when render.yaml is updated and checks that the deployed
+# backend and frontend are still reachable.
+
+name: Infrastructure Verification
+
+on:
+  push:
+    branches: [public-cloud]
+    paths:
+      - "render.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "render.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check backend is reachable
+        run: |
+          curl -fsS --max-time 60 https://moodflow-test-assignment.onrender.com/ > /dev/null
+          echo "Backend OK"
+
+      - name: Check frontend is reachable
+        run: |
+          curl -fsS --max-time 60 https://moodflow-frontend.onrender.com/ > /dev/null
+          echo "Frontend OK"
