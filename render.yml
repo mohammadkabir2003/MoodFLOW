@@ -1,0 +1,18 @@
+# MoodFLOW Infrastructure (Render)
+# Defines backend and frontend services as Infrastructure as Code.
+# Specifies how each service is built and started for deployment.
+
+services:
+  - type: web
+    name: moodflow-test-assignment
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+
+  - type: web
+    name: moodflow-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
